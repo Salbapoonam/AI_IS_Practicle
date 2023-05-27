@@ -1,0 +1,656 @@
+LP 2 
+
+
+AI Problem Statements
+*************************************************************************************************************
+######  1) Implement depth first search algorithm and Breadth First Search
+algorithm, use an undirected graph and develop a recursive algorithm for
+searching all the vertices of a graph or tree data structure. ######
+
+
+from collections import deque
+
+class Graph:
+    def __init__(self):
+        self.adjacency_list = {}
+
+    def add_edge(self, vertex1, vertex2):
+        if vertex1 not in self.adjacency_list:
+            self.adjacency_list[vertex1] = []
+        if vertex2 not in self.adjacency_list:
+            self.adjacency_list[vertex2] = []
+        self.adjacency_list[vertex1].append(vertex2)
+        self.adjacency_list[vertex2].append(vertex1)
+
+    def dfs(self, start_vertex):
+        visited = set()
+        self._dfs_recursive(start_vertex, visited)
+
+    def _dfs_recursive(self, vertex, visited):
+        visited.add(vertex)
+        print(vertex, end=' ')
+
+        neighbors = self.adjacency_list[vertex]
+        for neighbor in neighbors:
+            if neighbor not in visited:
+                self._dfs_recursive(neighbor, visited)
+
+    def bfs(self, start_vertex):
+        visited = set()
+        queue = deque([start_vertex])
+        visited.add(start_vertex)
+
+        while queue:
+            vertex = queue.popleft()
+            print(vertex, end=' ')
+
+            neighbors = self.adjacency_list[vertex]
+            for neighbor in neighbors:
+                if neighbor not in visited:
+                    visited.add(neighbor)
+                    queue.append(neighbor)
+
+
+# Create a graph
+graph = Graph()
+graph.add_edge(0, 1)
+graph.add_edge(0, 2)
+graph.add_edge(1, 2)
+graph.add_edge(2, 3)
+graph.add_edge(3, 3)
+
+# Perform DFS traversal
+print("DFS traversal:")
+graph.dfs(0)
+print()
+
+# Perform BFS traversal
+print("BFS traversal:")
+graph.bfs(0)
+print()
+
+
+
+
+*************************************************************************************
+######2) Implement A Star Algorithm for 8 puzzle problem######
+
+g = 0
+
+
+def print_board(elements):
+    for i in range(9):
+        if i % 3 == 0:
+            print()
+        if elements[i] == -1:
+            print("_", end=" ")
+        else:
+            print(elements[i], end=" ")
+    print()
+
+
+def solvable(start):
+    inv = 0
+
+    for i in range(9):
+        if start[i] <= 1:
+            continue
+        for j in range(i + 1, 9):
+            if start[j] == -1:
+                continue
+            if start[i] > start[j]:
+                inv += 1
+    if inv % 2 == 0:
+        return True
+    return False
+
+
+def heuristic(start, goal):
+    global g
+    h = 0
+    for i in range(9):
+        for j in range(9):
+            if start[i] == goal[j] and start[i] != -1:
+                h += (abs(j - i)) // 3 + (abs(j - i)) % 3
+    return h + g
+
+
+def moveleft(start, position):
+    start[position], start[position - 1] = start[position - 1], start[position]
+
+
+def moveright(start, position):
+    start[position], start[position + 1] = start[position + 1], start[position]
+
+
+def moveup(start, position):
+    start[position], start[position - 3] = start[position - 3], start[position]
+
+
+def movedown(start, position):
+    start[position], start[position + 3] = start[position + 3], start[position]
+
+
+def movetile(start, goal):
+    emptyat = start.index(-1)
+    row = emptyat // 3
+    col = emptyat % 3
+    t1, t2, t3, t4 = start[:], start[:], start[:], start[:]
+    f1, f2, f3, f4 = 100, 100, 100, 100
+
+    if col - 1 >= 0:
+        moveleft(t1, emptyat)
+        f1 = heuristic(t1, goal)
+    if col + 1 < 3:
+        moveright(t2, emptyat)
+        f2 = heuristic(t2, goal)
+    if row + 1 < 3:
+        movedown(t3, emptyat)
+        f3 = heuristic(t3, goal)
+    if row - 1 >= 0:
+        moveup(t4, emptyat)
+        f4 = heuristic(t4, goal)
+
+    min_heuristic = min(f1, f2, f3, f4)
+
+    if f1 == min_heuristic:
+        moveleft(start, emptyat)
+    elif f2 == min_heuristic:
+        moveright(start, emptyat)
+    elif f3 == min_heuristic:
+        movedown(start, emptyat)
+    elif f4 == min_heuristic:
+        moveup(start, emptyat)
+
+
+def solveEight(start, goal):
+    global g
+    g += 1
+    movetile(start, goal)
+    print_board(start)
+    f = heuristic(start, goal)
+    if f == g:
+        print("Solved in {} moves".format(f))
+        return
+
+    solveEight(start, goal)
+
+
+def main():
+    global g
+    start = list()
+    goal = list()
+    print("Enter the start state:(Enter -1 for empty):")
+    for i in range(9):
+        start.append(int(input()))
+
+    print("Enter the goal state:(Enter -1 for empty):")
+    for i in range(9):
+        goal.append(int(input()))
+
+    print_board(start)
+
+    # To check if solvable
+    if solvable(start):
+        solveEight(start, goal)
+        print("Solved in {} moves".format(g))
+    else:
+        print("Not possible to solve")
+
+
+# if _name_ == '_main_':
+main()
+
+
+
+
+
+*****************************************************************************************************
+###### 3) Implement A Star Algorithm to find out shortest distance ######
+
+
+import heapq
+
+class Node:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.g = float('inf')
+        self.h = 0
+        self.f = float('inf')
+        self.parent = None
+
+    def __lt__(self, other):
+        return self.f < other.f
+
+    def __eq__(self, other):
+        return self.x == other.x and self.y == other.y
+
+def heuristic(node, goal):
+    return abs(node.x - goal.x) + abs(node.y - goal.y)
+
+def astar(start, goal, grid):
+    open_list = []
+    closed_list = []
+    heapq.heappush(open_list, start)
+
+    while open_list:
+        current_node = heapq.heappop(open_list)
+        closed_list.append(current_node)
+
+        if current_node == goal:
+            path = []
+            while current_node.parent:
+                path.append(current_node)
+                current_node = current_node.parent
+            path.append(current_node)
+            return path[::-1]
+
+        neighbors = []
+        for i, j in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
+            neighbor_x = current_node.x + i
+            neighbor_y = current_node.y + j
+            if 0 <= neighbor_x < len(grid) and 0 <= neighbor_y < len(grid[0]) and grid[neighbor_x][neighbor_y] != 1:
+                neighbors.append(Node(neighbor_x, neighbor_y))
+
+        for neighbor in neighbors:
+            if neighbor in closed_list:
+                continue
+
+            tentative_g = current_node.g + 1
+            if tentative_g < neighbor.g:
+                neighbor.parent = current_node
+                neighbor.g = tentative_g
+                neighbor.h = heuristic(neighbor, goal)
+                neighbor.f = neighbor.g + neighbor.h
+                if neighbor not in open_list:
+                    heapq.heappush(open_list, neighbor)
+
+    return None
+grid = [[0, 0, 0, 0],
+        [0, 1, 0, 1],
+        [0, 1, 0, 0],
+        [0, 0, 0, 0]]
+
+start = Node(0, 0)
+goal = Node(3, 3)
+
+path = astar(start, goal, grid)
+
+if path:
+    for node in path:
+        print(f"({node.x}, {node.y})")
+else:
+    print("No path found.")
+
+
+
+
+
+
+**************************************************************************************
+
+
+
+
+
+
+###### 4) Implement a solution for a Constraint Satisfaction Problem using Branch
+and Bound and Backtracking for n-queens problem ######
+
+
+class NQueens:
+    def __init__(self, n):
+        self.n = n
+        self.columns = [-1] * n
+        self.solution_count = 0
+
+    def solve(self):
+        self.backtrack(0)
+
+    def backtrack(self, row):
+        if row == self.n:
+            self.print_solution()
+            self.solution_count += 1
+        else:
+            for col in range(self.n):
+                if self.is_safe(row, col):
+                    self.columns[row] = col
+                    self.backtrack(row + 1)
+                    self.columns[row] = -1
+
+    def is_safe(self, row, col):
+        for i in range(row):
+            if (
+                self.columns[i] == col
+                or self.columns[i] - col == i - row
+                or self.columns[i] - col == row - i
+            ):
+                return False
+        return True
+
+    def print_solution(self):
+        print("Solution", self.solution_count)
+        for row in range(self.n):
+            line = ""
+            for col in range(self.n):
+                if self.columns[row] == col:
+                    line += "Q "
+                else:
+                    line += ". "
+            print(line)
+        print()
+
+
+n = int(input("Enter the value of n: "))
+queens = NQueens(n)
+queens.solve()
+
+********************************************************************************
+
+###### 5) Implement Greedy search algorithm for Selection Sort ######
+
+def selection_sort_greedy(arr):
+    n = len(arr)
+    
+    for i in range(n):
+        min_index = i
+        
+        # Greedy search: Find the smallest element from i+1 to n-1
+        for j in range(i+1, n):
+            if arr[j] < arr[min_index]:
+                min_index = j
+        
+        # Swap the smallest element with the current element
+        arr[i], arr[min_index] = arr[min_index], arr[i]
+    
+    return arr
+
+# Example usage:
+array = [9, 3, 7, 1, 5]
+sorted_array = selection_sort_greedy(array)
+print(sorted_array)
+
+
+
+***************************************************************************************************
+
+###### 6) Implement Greedy search algorithm for Prim's Minimal Spanning Tree Algorithm ######
+
+
+
+#import sys
+
+class Graph:
+    def __init__(self, vertices):
+        self.V = vertices
+        self.graph = [[0 for _ in range(vertices)] for _ in range(vertices)]
+
+    def add_edge(self, u, v, weight):
+        self.graph[u][v] = weight
+        self.graph[v][u] = weight
+
+    def prim_mst(self):
+        parent = [-1] * self.V
+        key = [sys.maxsize] * self.V
+        visited = [False] * self.V
+
+        key[0] = 0  # Start with the first vertex
+        parent[0] = -1
+
+        for _ in range(self.V):
+            min_key = sys.maxsize
+            min_index = -1
+
+            # Greedy search: Find the vertex with the minimum key value
+            for v in range(self.V):
+                if not visited[v] and key[v] < min_key:
+                    min_key = key[v]
+                    min_index = v
+
+            visited[min_index] = True
+
+            # Update the key and parent arrays
+            for v in range(self.V):
+                if (
+                    self.graph[min_index][v] > 0
+                    and not visited[v]
+                    and self.graph[min_index][v] < key[v]
+                ):
+                    key[v] = self.graph[min_index][v]
+                    parent[v] = min_index
+
+        self.print_mst(parent)
+
+    def print_mst(self, parent):
+        print("Edge \tWeight")
+        for i in range(1, self.V):
+            print(parent[i], "-", i, "\t", self.graph[i][parent[i]])
+
+
+# Example usage:
+g = Graph(5)
+g.add_edge(0, 1, 2)
+g.add_edge(0, 3, 6)
+g.add_edge(1, 2, 3)
+g.add_edge(1, 3, 8)
+g.add_edge(1, 4, 5)
+g.add_edge(2, 4, 7)
+g.add_edge(3, 4, 9)
+
+g.prim_mst()
+
+*********************************************************************
+
+
+
+
+
+###### 7) Implement Greedy search algorithm for Kruskal's Minimal 
+Spanning Tree Algorithm ######
+
+class Graph:
+    def __init__(self, vertices):
+        self.V = vertices
+        self.graph = []
+
+    def add_edge(self, u, v, weight):
+        self.graph.append((u, v, weight))
+
+    def find_parent(self, parent, i):
+        if parent[i] == i:
+            return i
+        return self.find_parent(parent, parent[i])
+
+    def union(self, parent, rank, x, y):
+        x_root = self.find_parent(parent, x)
+        y_root = self.find_parent(parent, y)
+
+        if rank[x_root] < rank[y_root]:
+            parent[x_root] = y_root
+        elif rank[x_root] > rank[y_root]:
+            parent[y_root] = x_root
+        else:
+            parent[y_root] = x_root
+            rank[x_root] += 1
+
+    def kruskal_mst(self):
+        parent = []
+        rank = []
+        result = []
+
+        self.graph = sorted(self.graph, key=lambda item: item[2])
+
+        for v in range(self.V):
+            parent.append(v)
+            rank.append(0)
+
+        i = 0
+        e = 0
+
+        while e < self.V - 1:
+            u, v, weight = self.graph[i]
+            i += 1
+            x = self.find_parent(parent, u)
+            y = self.find_parent(parent, v)
+
+            if x != y:
+                e += 1
+                result.append((u, v, weight))
+                self.union(parent, rank, x, y)
+
+        self.print_mst(result)
+
+    def print_mst(self, result):
+        print("Edge \tWeight")
+        for u, v, weight in result:
+            print(u, "-", v, "\t", weight)
+
+
+# Example usage:
+g = Graph(5)
+g.add_edge(0, 1, 2)
+g.add_edge(0, 3, 6)
+g.add_edge(1, 2, 3)
+g.add_edge(1, 3, 8)
+g.add_edge(1, 4, 5)
+g.add_edge(2, 4, 7)
+g.add_edge(3, 4, 9)
+
+g.kruskal_mst()
+
+
+
+
+
+
+
+###### 8) Implement Greedy search algorithm for Dijkstra's Minimal
+Spanning Tree Algorithm  ######
+
+
+import heapq
+
+class Graph:
+    def __init__(self, vertices):
+        self.V = vertices
+        self.adj_list = {}
+
+    def add_edge(self, u, v, weight):
+        if u not in self.adj_list:
+            self.adj_list[u] = []
+        if v not in self.adj_list:
+            self.adj_list[v] = []
+        self.adj_list[u].append((v, weight))
+        self.adj_list[v].append((u, weight))
+
+    def dijkstra(self, source):
+        distance = {v: float('inf') for v in self.adj_list}
+        distance[source] = 0
+
+        priority_queue = [(0, source)]
+
+        while priority_queue:
+            dist, u = heapq.heappop(priority_queue)
+
+            if dist > distance[u]:
+                continue
+
+            for v, weight in self.adj_list[u]:
+                new_dist = dist + weight
+
+                if new_dist < distance[v]:
+                    distance[v] = new_dist
+                    heapq.heappush(priority_queue, (new_dist, v))
+
+        self.print_shortest_paths(source, distance)
+
+    def print_shortest_paths(self, source, distance):
+        print("Shortest paths from source", source)
+        for v in distance:
+            print("Vertex:", v, "\tDistance:", distance[v])
+
+
+# Example usage:
+g = Graph(6)
+g.add_edge(0, 1, 2)
+g.add_edge(0, 2, 4)
+g.add_edge(1, 2, 1)
+g.add_edge(1, 3, 5)
+g.add_edge(2, 3, 2)
+g.add_edge(2, 4, 3)
+g.add_edge(3, 4, 1)
+g.add_edge(3, 5, 4)
+g.add_edge(4, 5, 6)
+
+g.dijkstra(0)
+**********************************************************************************
+
+###### 9) Implement Greedy search algorithm for Single-Source Shortest Path Problem  ######
+
+
+
+#Dijkstra.java
+
+
+
+import heapq
+
+class Graph:
+    def __init__(self, vertices):
+        self.V = vertices
+        self.adj_list = {}
+
+    def add_edge(self, u, v, weight):
+        if u not in self.adj_list:
+            self.adj_list[u] = []
+        if v not in self.adj_list:
+            self.adj_list[v] = []
+        self.adj_list[u].append((v, weight))
+
+    def dijkstra(self, source):
+        distance = {v: float('inf') for v in self.adj_list}
+        distance[source] = 0
+
+        priority_queue = [(0, source)]
+
+        while priority_queue:
+            dist, u = heapq.heappop(priority_queue)
+
+            if dist > distance[u]:
+                continue
+
+            for v, weight in self.adj_list[u]:
+                new_dist = dist + weight
+
+                if new_dist < distance[v]:
+                    distance[v] = new_dist
+                    heapq.heappush(priority_queue, (new_dist, v))
+
+        self.print_shortest_paths(source, distance)
+
+    def print_shortest_paths(self, source, distance):
+        print("Shortest paths from source", source)
+        for v in distance:
+            print("Vertex:", v, "\tDistance:", distance[v])
+
+
+# Example usage:
+g = Graph(6)
+g.add_edge(0, 1, 2)
+g.add_edge(0, 2, 4)
+g.add_edge(1, 2, 1)
+g.add_edge(1, 3, 5)
+g.add_edge(2, 3, 2)
+g.add_edge(2, 4, 3)
+g.add_edge(3, 4, 1)
+g.add_edge(3, 5, 4)
+g.add_edge(4, 5, 6)
+
+g.dijkstra(0)
+
+
+
+
+
+
